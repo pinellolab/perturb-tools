@@ -45,6 +45,14 @@ class _Screen(AnnData):
     def condit(self):
         return self.var
 
+    @property
+    def condit_m(self):
+        return self.varm
+
+    @property
+    def condit_p(self):
+        return self.varp
+
     def __repr__(self) -> str:
         return _print_screen_object(self)[2]
 
@@ -142,7 +150,7 @@ class _Screen(AnnData):
                 return lfc
             else:
                 self.guides[f"{cond1}_{cond2}.{out_guides_suffix}"] = lfc
-        except:  # TBD: what error?
+        except Exception:  # TBD: what error?
             print("Calculating LFC against two previously calculated LFC values...")
             dlfc = _log_fold_change(self.guides, cond1, cond2)
 
