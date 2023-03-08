@@ -22,15 +22,15 @@ from ._supporting_functions._print_screen_object import _print_screen_object
 
 
 class _Screen(AnnData):
-    def __init__(self, X=None, guides=None, condit=None, *args, **kwargs):
-        super().__init__(X, dtype=X.dtype, obs=guides, var=condit, *args, **kwargs)
+    def __init__(self, X=None, guides=None, samples=None, *args, **kwargs):
+        super().__init__(X, dtype=X.dtype, obs=guides, var=samples, *args, **kwargs)
 
     @classmethod
     def from_adata(cls, adata: ad.AnnData):
         return cls(
             (adata.X),
             guides=(adata.obs),
-            condit=(adata.var),
+            samples=(adata.var),
             obsm=adata.obsm,
             obsp=adata.obsp,
             uns=(adata.uns),
@@ -41,26 +41,42 @@ class _Screen(AnnData):
     def guides(self):
         return self.obs
 
+    @guides.setter
+    def guides(self, new_val: pd.DataFrame):
+        self.obs = new_val
+
     @property
-    def condit(self):
+    def samples(self):
         return self.var
 
-    @property
-    def condit_m(self):
-        return self.varm
+    @samples.setter
+    def samples(self, new_val: pd.DataFrame):
+        self.var = new_val
 
     @property
-    def condit_p(self):
+    def samples_m(self):
+        return self.varm
+
+    @samples_m.setter
+    def samples_m(self, new_val):
+        self.varm = new_val
+
+    @property
+    def samples_p(self):
         return self.varp
+
+    @samples_p.setter
+    def samples_p(self, new_val):
+        self.varp = new_val
 
     def __repr__(self) -> str:
         return _print_screen_object(self)[2]
 
     def __add__(self, other):
         if all(self.guides.index == other.guides.index) and all(
-            self.condit.index == other.condit.index
+            self.samples.index == other.samples.index
         ):
-            return _Screen(self.X + other.X, self.guides.copy(), self.condit.copy())
+            return _Screen(self.X + other.X, self.guides.copy(), self.samples.copy())
         else:
             raise ValueError("Guides/sample description mismatch")
 
@@ -73,7 +89,9 @@ class _Screen(AnnData):
             self.__setattr__(key, value)
 
         if metadata:
-            self.condit = self.condit.merge(pd.read_csv(metadata), on=merge_metadata_on)
+            self.samples = self.samples.merge(
+                pd.read_csv(metadata), on=merge_metadata_on
+            )
 
         _print_screen_object(self)
 
@@ -108,8 +126,8 @@ class _Screen(AnnData):
     # TBD: mask ones with too low raw counts.
     def log_fold_change(
         self,
-        cond1,
-        cond2,
+        sample1,
+        sample2,
         lognorm_counts_key="lognorm_counts",
         name=False,
         out_guides_suffix="lfc",
@@ -129,35 +147,33 @@ class _Screen(AnnData):
                 "Specified normalized count isn't in your layer. First run screen.log_norm()."
             )
 
-        cond1_idx = np.where(cond1 == self.condit.index)[0]
-        cond2_idx = np.where(cond2 == self.condit.index)[0]
-        if len(cond1_idx) != 1 or len(cond2_idx) != 1:
-            if len(cond1_idx) == 0:
-                print(f"No condition named {cond1} in Screen object.")
+        sample1_idx = np.where(sample1 == self.samples.index)[0]
+        sample2_idx = np.where(sample2 == self.samples.index)[0]
+        if len(sample1_idx) != 1 or len(sample2_idx) != 1:
+            if len(sample1_idx) == 0:
+                print(f"No sample named {sample1} in Screen object.")
             else:
-                print(f"Duplicate condition name {cond1} in Screen object")
-            if len(cond2_idx) == 0:
-                print(f"No condition named {cond2} in Screen object.")
+                print(f"Duplicate sample name {sample1} in Screen object")
+            if len(sample2_idx) == 0:
+                print(f"No sample named {sample2} in Screen object.")
             else:
-                print(f"Duplicate condition name {cond2} in Screen object")
+                print(f"Duplicate sample name {sample2} in Screen object")
             raise ValueError("")
 
         try:
             lfc = _log_fold_change(
-                self.layers[lognorm_counts_key], cond1_idx, cond2_idx
+                self.layers[lognorm_counts_key], sample1_idx, sample2_idx
             )
             if return_result:
                 return lfc
             else:
-                self.guides[f"{cond1}_{cond2}.{out_guides_suffix}"] = lfc
+                self.guides[f"{sample1}_{sample2}.{out_guides_suffix}"] = lfc
         except Exception:  # TBD: what error?
             print("Calculating LFC against two previously calculated LFC values...")
-            dlfc = _log_fold_change(self.guides, cond1, cond2)
+            dlfc = _log_fold_change(self.guides, sample1, sample2)
 
             if not name:
-                name = (
-                    f'{cond1.strip(".lfc")}_{cond2.strip(".lfc")}.d{out_guides_suffix}'
-                )
+                name = f'{sample1.strip(".lfc")}_{sample2.strip(".lfc")}.d{out_guides_suffix}'
 
             if return_result:
                 return dlfc
@@ -169,26 +185,24 @@ class _Screen(AnnData):
         cond1,
         cond2,
         lognorm_counts_key="lognorm_counts",
-        rep_condit="replicate",
-        compare_condit="sort",
+        rep_col="replicate",
+        compare_col="sort",
         out_guides_suffix="lfc",
         keep_result=False,
     ):
 
-        if rep_condit not in self.condit.columns:
-            raise ValueError(f"{rep_condit} not in condit features")
-        if compare_condit not in self.condit.columns:
-            raise ValueError(f"{compare_condit} not in condit features")
+        if rep_col not in self.samples.columns:
+            raise ValueError(f"{rep_col} not in samples features")
+        if compare_col not in self.samples.columns:
+            raise ValueError(f"{compare_col} not in samples features")
 
         lfcs = []
-        for rep in self.condit[rep_condit].unique():
+        for rep in self.samples[rep_col].unique():
             cond1_idx = np.where(
-                (self.condit[rep_condit] == rep)
-                & (self.condit[compare_condit] == cond1)
+                (self.samples[rep_col] == rep) & (self.samples[compare_col] == cond1)
             )[0]
             cond2_idx = np.where(
-                (self.condit[rep_condit] == rep)
-                & (self.condit[compare_condit] == cond2)
+                (self.samples[rep_col] == rep) & (self.samples[compare_col] == cond2)
             )[0]
 
             if len(cond1_idx) != 1 or len(cond2_idx) != 1:
@@ -198,8 +212,8 @@ class _Screen(AnnData):
 
             lfcs.append(
                 self.log_fold_change(
-                    self.condit.index[cond1_idx].tolist()[0],
-                    self.condit.index[cond2_idx].tolist()[0],
+                    self.samples.index[cond1_idx].tolist()[0],
+                    self.samples.index[cond2_idx].tolist()[0],
                     lognorm_counts_key=lognorm_counts_key,
                     return_result=True,
                 )
@@ -208,7 +222,7 @@ class _Screen(AnnData):
         lfcs_array = np.concatenate(lfcs, axis=1)
         lfcs_df_columns = [
             f"{s}.{cond1}_{cond2}.{out_guides_suffix}"
-            for s in self.condit[rep_condit].unique()
+            for s in self.samples[rep_col].unique()
         ]
         lfcs_df = pd.DataFrame(
             lfcs_array, index=self.guides.index, columns=lfcs_df_columns
@@ -224,8 +238,8 @@ class _Screen(AnnData):
         cond1,
         cond2,
         lognorm_counts_key="lognorm_counts",
-        aggregate_condit="replicate",
-        compare_condit="sort",
+        aggregate_col="replicate",
+        compare_col="sort",
         out_guides_suffix="lfc",
         aggregate_fn="median",
         name=None,
@@ -237,8 +251,8 @@ class _Screen(AnnData):
             cond1,
             cond2,
             lognorm_counts_key=lognorm_counts_key,
-            rep_condit=aggregate_condit,
-            compare_condit=compare_condit,
+            rep_col=aggregate_col,
+            compare_col=compare_col,
             out_guides_suffix=out_guides_suffix,
             keep_result=keep_per_replicate,
         )
@@ -341,7 +355,7 @@ class _Screen(AnnData):
         mageck_input_df = (
             pd.DataFrame(
                 count_matrix,
-                columns=sample_prefix + self.condit.index,
+                columns=sample_prefix + self.samples.index,
                 index=self.guides.index,
             )
             .fillna(0)
@@ -387,12 +401,12 @@ def concat(screens, *args, **kwargs):
     return _Screen(adata)
 
 
-def read_csv(X_path=None, guide_path=None, condit_path=None, sep=","):
+def read_csv(X_path=None, guides_path=None, samples_path=None, sep=","):
     if X_path is not None:
         X_df = pd.read_csv(X_path, delimiter=sep, header=0, index_col=0)
         X = X_df.values
     else:
         X = None
-    guide_df = pd.read_csv(guide_path, sep=sep) if guide_path is not None else None
-    condit_df = None if condit_path is None else pd.read_csv(condit_path, sep=sep)
-    return _Screen(X=X, guides=guide_df, condit=condit_df)
+    guide_df = pd.read_csv(guides_path, sep=sep) if guides_path is not None else None
+    samples_df = None if samples_path is None else pd.read_csv(samples_path, sep=sep)
+    return _Screen(X=X, guides=guide_df, samples=samples_df)

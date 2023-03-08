@@ -20,7 +20,7 @@ screen = pt.Screen(X)
 Genome Editing Screen composed of: n_guides x n_conditions = 946 x 12
 
    guides:    'barcode', 'barcode_id', 'experiment', 'sequence', 'target_id', 'pred_ABE_edit', 'pred_CBE_edit'
-   condit:    'conditions'
+   samples:    'conditions'
    condit_m:  'barcode_counts', 'unexpected_sequences'
    condit_p:  'correlation'
    layers:    'X_lognorm'
@@ -35,7 +35,7 @@ This format and organization of metadata surrounding a multidimensional experime
 
 * **`screen.X`** (Numpy array)
 
-* **`screen.condit`** (pandas DataFrame) of shape: `[conditions x condition_annotation]`
+* **`screen.samples`** (pandas DataFrame) of shape: `[conditions x condition_annotation]`
 
 * **`screen.guides`** (pandas DataFrame) of shape: `[guides x guide_annotation]`
 

@@ -16,7 +16,7 @@ def screen():
             ],
             index=["g1", "g2", "g3"],
         ),
-        condit=pd.DataFrame(index=["c1", "c2", "c3", "c4"]),
+        samples=pd.DataFrame(index=["c1", "c2", "c3", "c4"]),
     )
 
 
@@ -53,4 +53,4 @@ class TestClass:
     def test_from_adata(self, adata, screen):
         screen = pt.Screen.from_adata(adata)
         assert (screen.guides.index == adata.obs.index).all()
-        assert (screen.condit.index == adata.var.index).all()
+        assert (screen.samples.index == adata.var.index).all()
