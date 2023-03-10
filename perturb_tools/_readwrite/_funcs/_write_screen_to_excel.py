@@ -41,7 +41,7 @@ def _collect_screen_dfs(screen, include_uns=False):
         sheet_names.append(key)
 
     df_list.extend([screen.guides, screen.samples])
-    sheet_names.extend(["guides", "condit"])
+    sheet_names.extend(["guides", "samples"])
 
     for i in [screen.condit_m, screen.condit_p]:
         df_list, sheet_names = _append_dfs_and_name_from_dict(i, df_list, sheet_names)

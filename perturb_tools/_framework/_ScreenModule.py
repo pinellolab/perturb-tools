@@ -23,7 +23,7 @@ from ._supporting_functions._print_screen_object import _print_screen_object
 
 class _Screen(AnnData):
     def __init__(self, X=None, guides=None, samples=None, *args, **kwargs):
-        super().__init__(X, dtype=X.dtype, obs=guides, var=samples, *args, **kwargs)
+        super().__init__(X=X, dtype=X.dtype, obs=guides, var=samples, *args, **kwargs)
 
     @classmethod
     def from_adata(cls, adata: ad.AnnData):
@@ -233,15 +233,15 @@ class _Screen(AnnData):
         return lfcs_df
 
     # TODO: add guides metadata on how aggregates are calcualted?
-    def log_fold_change_aggregate(
+    def log_fold_change_agg(
         self,
         cond1,
         cond2,
         lognorm_counts_key="lognorm_counts",
-        aggregate_col="replicate",
+        agg_col="replicate",
         compare_col="sort",
         out_guides_suffix="lfc",
-        aggregate_fn="median",
+        agg_fn="median",
         name=None,
         return_result=False,
         keep_per_replicate=False,
@@ -251,17 +251,17 @@ class _Screen(AnnData):
             cond1,
             cond2,
             lognorm_counts_key=lognorm_counts_key,
-            rep_col=aggregate_col,
+            rep_col=agg_col,
             compare_col=compare_col,
             out_guides_suffix=out_guides_suffix,
             keep_result=keep_per_replicate,
         )
 
-        if aggregate_fn == "mean":
+        if agg_fn == "mean":
             lfcs_agg = lfcs_df.apply(np.mean, axis=1)
-        elif aggregate_fn == "median":
+        elif agg_fn == "median":
             lfcs_agg = lfcs_df.apply(np.median, axis=1)
-        elif aggregate_fn == "sd":
+        elif agg_fn == "sd":
             lfcs_agg = lfcs_df.apply(np.std, axis=1)
         else:
             raise ValueError(
@@ -271,9 +271,7 @@ class _Screen(AnnData):
         if return_result:
             return lfcs_agg
         if name is None:
-            self.guides[
-                f"{cond1}_{cond2}.{out_guides_suffix}.{aggregate_fn}"
-            ] = lfcs_agg
+            self.guides[f"{cond1}_{cond2}.{out_guides_suffix}.{agg_fn}"] = lfcs_agg
         else:
             self.guides[name] = lfcs_agg
 

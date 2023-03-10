@@ -1,8 +1,11 @@
-
 # _print_screen_object.py
 __module_name__ = "_print_screen_object.py"
 __author__ = ", ".join(["Michael E. Vinyard"])
-__email__ = ", ".join(["vinyard@g.harvard.edu",])
+__email__ = ", ".join(
+    [
+        "vinyard@g.harvard.edu",
+    ]
+)
 
 
 def _print_screen_object(ScreenObject):
@@ -13,13 +16,17 @@ def _print_screen_object(ScreenObject):
 
     n_guides, n_conditions = ScreenObject.X.shape[0], ScreenObject.X.shape[1]
 
-    descr = "Genome Editing Screen comprised of n_guides x n_conditions = {} x {}\n".format(n_guides, n_conditions)
+    descr = (
+        "Genome Editing Screen comprised of n_guides x n_conditions = {} x {}\n".format(
+            n_guides, n_conditions
+        )
+    )
 
     MainScreenAttributes = [
         "guides",
-        "condit",
-        "condit_m",
-        "condit_p",
+        "samples",
+        "samples_m",
+        "samples_p",
         "layers",
         "uns",
     ]
