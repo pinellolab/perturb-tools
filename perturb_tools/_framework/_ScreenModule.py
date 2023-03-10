@@ -80,6 +80,10 @@ class _Screen(AnnData):
         else:
             raise ValueError("Guides/sample description mismatch")
 
+    def __getitem__(self, index):
+        adata = super().__getitem__(index)
+        return _Screen.from_adata(adata)
+
     def read_PoolQ(self, path, metadata=False, merge_metadata_on="Condition"):
         """Read poolQ."""
         self._PoolQ_outpath = path
@@ -396,15 +400,22 @@ def read_h5ad(filename):
 def concat(screens, *args, **kwargs):
     adata = ad.concat(screens, *args, **kwargs)
 
-    return _Screen(adata)
+    return _Screen.from_adata(adata)
 
 
-def read_csv(X_path=None, guides_path=None, samples_path=None, sep=","):
+def read_csv(X_path=None, guides_path=None, samples_path=None, sep=",", **kwargs):
     if X_path is not None:
-        X_df = pd.read_csv(X_path, delimiter=sep, header=0, index_col=0)
+        X_df = pd.read_csv(
+            X_path,
+            delimiter=sep,
+            header=0,
+            index_col=0,
+        )
         X = X_df.values
     else:
         X = None
-    guide_df = pd.read_csv(guides_path, sep=sep) if guides_path is not None else None
+    guide_df = (
+        pd.read_csv(guides_path, sep=sep, **kwargs) if guides_path is not None else None
+    )
     samples_df = None if samples_path is None else pd.read_csv(samples_path, sep=sep)
     return _Screen(X=X, guides=guide_df, samples=samples_df)

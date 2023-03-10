@@ -20,9 +20,9 @@ screen = pt.Screen(X)
 Genome Editing Screen composed of: n_guides x n_conditions = 946 x 12
 
    guides:    'barcode', 'barcode_id', 'experiment', 'sequence', 'target_id', 'pred_ABE_edit', 'pred_CBE_edit'
-   samples:    'conditions'
-   condit_m:  'barcode_counts', 'unexpected_sequences'
-   condit_p:  'correlation'
+   samples:    'condition', 'replicate'
+   samples_m:  'barcode_counts', 'unexpected_sequences'
+   samples_p:  'correlation'
    layers:    'X_lognorm'
    uns:       'run_info', 'poolq3', 'metadata', 'SampleBarcodeReadCounts', 'CommonSampleBarcodeReadCounts'
 ```
@@ -35,9 +35,9 @@ This format and organization of metadata surrounding a multidimensional experime
 
 * **`screen.X`** (Numpy array)
 
-* **`screen.samples`** (pandas DataFrame) of shape: `[conditions x condition_annotation]`
+* **`screen.samples`** (pandas DataFrame) of shape: `[n_samples x sample_annotation]`
 
-* **`screen.guides`** (pandas DataFrame) of shape: `[guides x guide_annotation]`
+* **`screen.guides`** (pandas DataFrame) of shape: `[n_guides x guide_annotation]`
 
 See the [**tutorial**](perturb_tools/screen_demo.ipynb) for more information.
 

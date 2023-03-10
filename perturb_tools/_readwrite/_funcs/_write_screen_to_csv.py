@@ -1,8 +1,11 @@
-
 # _write_screen.py
 __module_name__ = "_write_screen.py"
 __author__ = ", ".join(["Michael E. Vinyard"])
-__email__ = ", ".join(["vinyard@g.harvard.edu",])
+__email__ = ", ".join(
+    [
+        "vinyard@g.harvard.edu",
+    ]
+)
 
 
 # package imports #
@@ -35,7 +38,7 @@ def _write_screen_to_csv(screen, out_path="CRISPR_screen"):
         sep=",",
     )
     screen.guides.to_csv(os.path.join(out_path, "screen.guides.csv"))
-    screen.condit.to_csv(os.path.join(out_path, "screen.condit.csv"))
-    _save_dict_of_dfs(screen.condit_m, out_path, "screen.condit_m")
-    _save_dict_of_dfs(screen.condit_p, out_path, "screen.condit_p")
+    screen.samples.to_csv(os.path.join(out_path, "screen.samples.csv"))
+    _save_dict_of_dfs(screen.samples_m, out_path, "screen.samples_m")
+    _save_dict_of_dfs(screen.samples_p, out_path, "screen.samples_p")
     _save_dict_of_dfs(screen.layers, out_path, "screen.layers")
