@@ -374,7 +374,7 @@ class _Screen(AnnData):
         mageck_input_df["sgRNA"] = mageck_input_df["sgRNA"].map(
             lambda s: s.replace(" ", "_")
         )
-        mageck_input_df.insert(1, "gene", self.guides[target_column])
+        mageck_input_df.insert(1, "gene", self.guides[target_column].astype(str))
         mageck_input_df = mageck_input_df.loc[
             (mageck_input_df.gene.map(lambda o: not pd.isnull(o)))
             & mageck_input_df.gene.map(bool),

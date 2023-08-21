@@ -173,7 +173,7 @@ def get_outlier_guides(
 ):
     """Obtain outlier guides.
     For each experimental condition in `samples`, find outlier guides that shows extreme counts compared to guides.
-    Outlier guides are defined as those With MAD criteria (z>`mad_z_thres`) and has absolute RPM of `abs_RPM_thres` are defined as outlier guides.
+    Outlier guides are defined as those With MAD criteria (z>`mad_z_thres`) and has absolute RPM of `abs_RPM_thres`.
     """
 
     if "X_RPM" not in screen.layers:
@@ -198,6 +198,9 @@ def get_outlier_guides(
     aberr_guide_dfs = []
     for df in aberr_dict.values():
         aberr_guide_dfs.extend(df)
-    aberr_guides = pd.concat(aberr_guide_dfs, axis=0)
+    if len(aberr_guide_dfs) == 0:
+        return pd.DataFrame({"name": [], "sample": [], "RPM": []})
+    aberr_guides = pd.concat(aberr_guide_dfs, axis=0).reset_index()
+    aberr_guides.columns = ["name"] + aberr_guides.columns[1:]
     # aberr_guides.index = aberr_idx_list
-    return aberr_guides.reset_index()
+    return aberr_guides

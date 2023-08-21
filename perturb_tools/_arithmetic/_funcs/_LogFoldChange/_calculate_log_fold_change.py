@@ -1,7 +1,5 @@
 import scipy.stats
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 
 
 def _calculate_enrichment_pvalues(arr1, arr2):
