@@ -6,9 +6,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 linestyles = ["solid", "dotted", "dashed", "dashdot"]
+
+
+def spearman_keepdim(X):
+    c = scipy.stats.spearmanr(X, nan_policy="omit")[0]
+    if X.shape[1] == 2:
+        return np.array([[1, c], [c, 1]])
+    return c
+
+
 corr_func_dict = {
     "Pearson": lambda X: ma.corrcoef(X.T),
-    "Spearman": lambda X: scipy.stats.spearmanr(X, nan_policy="omit")[0],
+    "Spearman": lambda X: spearman_keepdim(X),
 }
 
 
@@ -201,6 +210,6 @@ def get_outlier_guides(
     if len(aberr_guide_dfs) == 0:
         return pd.DataFrame({"name": [], "sample": [], "RPM": []})
     aberr_guides = pd.concat(aberr_guide_dfs, axis=0).reset_index()
-    aberr_guides.columns = ["name"] + aberr_guides.columns[1:]
+    aberr_guides.columns = ["name"] + aberr_guides.columns[1:].tolist()
     # aberr_guides.index = aberr_idx_list
     return aberr_guides
