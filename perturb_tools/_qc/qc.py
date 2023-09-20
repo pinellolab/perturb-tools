@@ -9,9 +9,10 @@ linestyles = ["solid", "dotted", "dashed", "dashdot"]
 
 
 def spearman_keepdim(X):
-    c = scipy.stats.spearmanr(X, nan_policy="omit")[0]
-    if X.shape[1] == 2:
-        return np.array([[1, c], [c, 1]])
+    # print(scipy.stats.spearmanr(X, nan_policy="omit"))
+    # c = scipy.stats.spearmanr(X, nan_policy="omit")[0]
+    df = pd.DataFrame(X)
+    c = df.corr(method="spearman").values
     return c
 
 
@@ -40,7 +41,7 @@ def set_sample_correlation_guides(screen, guide_idx, prefix="", method="Pearson"
     if prefix != "":
         prefix = f"{prefix}_"
     c = corr_func(ma.masked_invalid(screen_subset.X))
-    if c is np.isnan:
+    if np.isnan(c).all():
         print(
             f"Failed to calculate {method} correlation. Check if your matrix is constant or have no valid values."
         )
@@ -191,7 +192,7 @@ def get_outlier_guides(
 
     for cond in screen.samples[condit_col].unique():
         adata = screen[:, screen.samples[condit_col] == cond]
-        median_p = np.nanmedian(adata.layers["X_RPM"], axis=1)
+        median_p = np.nanmedian(adata.layers["X_RPM"].copy(), axis=1)
         aberr_guide_df_condit = []
         aberr_idx_list = []
         for i, sample in enumerate(adata.samples.index):
