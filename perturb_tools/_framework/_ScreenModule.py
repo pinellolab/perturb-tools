@@ -23,7 +23,7 @@ from ._supporting_functions._print_screen_object import _print_screen_object
 
 class _Screen(AnnData):
     def __init__(self, X=None, guides=None, samples=None, *args, **kwargs):
-        super().__init__(X=X, dtype=X.dtype, obs=guides, var=samples, *args, **kwargs)
+        super().__init__(X=X, obs=guides, var=samples, *args, **kwargs)
 
     @classmethod
     def from_adata(cls, adata: ad.AnnData):
