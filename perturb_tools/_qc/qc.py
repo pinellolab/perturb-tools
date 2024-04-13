@@ -1,6 +1,5 @@
 import numpy as np
 import numpy.ma as ma
-import scipy.stats
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -50,7 +49,7 @@ def set_sample_correlation_guides(screen, guide_idx, prefix="", method="Pearson"
 
     # screen.samples[f"{prefix}mean_corr_X"] = screen.varm[f"{prefix}corr_X"].mean(0)
 
-    screen.samples[f"{prefix}median_corr_X"] = np.median(
+    screen.samples[f"{prefix}median_corr_X"] = np.nanmedian(
         screen.varm[f"{prefix}corr_X"], axis=0
     )
 
@@ -105,10 +104,17 @@ def plot_lfc_correlation(
     screen.uns["lfc"] = lfcs
     screen.uns["lfc_corr"] = corr_func_dict[method](lfcs)
     for i, col in enumerate(lfcs.columns):
-        rep = col.split(".")[0]
+        rep = col.split(f".{cond1}_{cond2}", 1)[0]
+        if "." in rep:
+            rep = rep.split(".")
+        if isinstance(rep_col, str):
+            rep_idx = screen.samples[rep_col].astype(str) == rep
+        else:
+            rep_idx = (screen.samples[rep_col] == rep).all(axis=1)
         screen.samples.loc[
-            screen.samples[rep_col] == rep, f"median_lfc_corr.{cond1}_{cond2}"
-        ] = np.nanmedian(screen.uns["lfc_corr"][i, :])
+            rep_idx,
+            f"median_lfc_corr.{cond1}_{cond2}",
+        ] = np.nanmedian(np.delete(screen.uns["lfc_corr"][i, :], i))
     fig, ax = plt.subplots(figsize=figsize)
     sns.heatmap(
         screen.uns["lfc_corr"],
@@ -187,14 +193,13 @@ def get_outlier_guides(
     """
 
     if "X_RPM" not in screen.layers:
-        screen.layers["X_RPM"] = screen.X / screen.X.sum(axis=0) * 10e6
+        screen.layers["X_RPM"] = (screen.X / screen.X.sum(axis=0) * 10e6).copy()
     aberr_dict = {}
 
     for cond in screen.samples[condit_col].unique():
         adata = screen[:, screen.samples[condit_col] == cond]
         median_p = np.nanmedian(adata.layers["X_RPM"].copy(), axis=1)
         aberr_guide_df_condit = []
-        aberr_idx_list = []
         for i, sample in enumerate(adata.samples.index):
             outlier_idx = np.where(
                 (adata.layers["X_RPM"][:, i] > median_p * mad_z_thres)
@@ -202,7 +207,7 @@ def get_outlier_guides(
             )[0]
             outlier_guides = adata.guides.iloc[outlier_idx, :].copy()
             outlier_guides["sample"] = adata.samples.index[i]
-            outlier_guides["RPM"] = adata.layers["X_RPM"][outlier_idx, i]
+            outlier_guides["RPM"] = adata.layers["X_RPM"].copy()[outlier_idx, i]
             aberr_guide_df_condit.append(outlier_guides[["sample", "RPM"]])
         aberr_dict[cond] = aberr_guide_df_condit
     aberr_guide_dfs = []

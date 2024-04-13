@@ -4,7 +4,7 @@ __author__ = ", ".join(["Michael E. Vinyard", "Jayoung Kim Ryu"])
 __email__ = ", ".join(["vinyard@g.harvard.edu", "jayoung_ryu@g.harvard.edu"])
 
 import warnings
-from typing import Union
+from typing import Union, List
 
 import anndata as ad
 import numpy as np
@@ -102,7 +102,6 @@ class _Screen(AnnData):
     def annotate_guides(
         self, genes, chrom, start, stop, annotations, DirectPairDict, ref_seq_path
     ):
-
         """
         Annotate sgRNA table.
 
@@ -137,7 +136,6 @@ class _Screen(AnnData):
         out_guides_suffix="lfc",
         return_result=False,
     ):
-
         """
         General module to calculate LFC across experimental conditions.
         """
@@ -189,30 +187,71 @@ class _Screen(AnnData):
         cond1,
         cond2,
         lognorm_counts_key="lognorm_counts",
-        rep_col="replicate",
+        rep_col: Union[str, List[str]] = "replicate",
         compare_col="sort",
         out_guides_suffix="lfc",
         keep_result=False,
+        ignore_missing=False,
     ):
-
-        if rep_col not in self.samples.columns:
+        """Get gRNA abundance LFC across conditions for each replicate.
+        ignore_missing: If True, does not raise Error when one of the conditions is missing for a replicate.
+        """
+        if isinstance(rep_col, str) and rep_col not in self.samples.columns:
             raise ValueError(f"{rep_col} not in samples features")
+        elif isinstance(rep_col, list):
+            for rc in rep_col:
+                if rc not in self.samples.columns:
+                    raise ValueError(f"{rc} not in samples features")
         if compare_col not in self.samples.columns:
             raise ValueError(f"{compare_col} not in samples features")
+        if (
+            cond1 not in self.samples[compare_col].tolist()
+            or cond2 not in self.samples[compare_col].tolist()
+        ):
+            raise ValueError(
+                f"{cond1} or {cond2} not in sample conditions {self.samples[compare_col]}"
+            )
 
         lfcs = []
-        for rep in self.samples[rep_col].unique():
-            cond1_idx = np.where(
-                (self.samples[rep_col] == rep) & (self.samples[compare_col] == cond1)
-            )[0]
-            cond2_idx = np.where(
-                (self.samples[rep_col] == rep) & (self.samples[compare_col] == cond2)
-            )[0]
 
+        if isinstance(rep_col, str):
+            lfc_rep_cols = self.samples[rep_col].unique().tolist()
+            unique_reps = self.samples[rep_col].unique()
+        else:
+            unique_reps = [
+                list(t)
+                for t in self.samples[rep_col].drop_duplicates().to_records(index=False)
+            ]
+            lfc_rep_cols = [
+                ".".join(list(map(str, rep_list))) for rep_list in unique_reps
+            ]
+        for rep in unique_reps:
+            if isinstance(rep_col, str):
+                cond1_idx = np.where(
+                    (self.samples[rep_col] == rep)
+                    & (self.samples[compare_col] == cond1)
+                )[0]
+                cond2_idx = np.where(
+                    (self.samples[rep_col] == rep)
+                    & (self.samples[compare_col] == cond2)
+                )[0]
+            elif isinstance(rep_col, list):
+                cond1_idx = np.where(
+                    (self.samples[rep_col] == rep).all(axis=1)
+                    & (self.samples[compare_col] == cond1)
+                )[0]
+                cond2_idx = np.where(
+                    (self.samples[rep_col] == rep).all(axis=1)
+                    & (self.samples[compare_col] == cond2)
+                )[0]
             if len(cond1_idx) != 1 or len(cond2_idx) != 1:
-                raise ValueError(
-                    "Conditions are not unique for each replicates to be aggregated."
-                )
+                if not ignore_missing:
+                    raise ValueError(
+                        f"Conditions are not unique for each replicates ({rep_col} == {rep}) to be aggregated:\n{cond1}:{self.samples[cond1_idx]} or {cond2}:{self.samples[cond2_idx]}\n {self.samples}"
+                    )
+                else:
+                    lfc_rep_cols.pop(rep)
+                    continue
 
             lfcs.append(
                 self.log_fold_change(
@@ -225,8 +264,7 @@ class _Screen(AnnData):
 
         lfcs_array = np.concatenate(lfcs, axis=1)
         lfcs_df_columns = [
-            f"{s}.{cond1}_{cond2}.{out_guides_suffix}"
-            for s in self.samples[rep_col].unique()
+            f"{s}.{cond1}_{cond2}.{out_guides_suffix}" for s in lfc_rep_cols
         ]
         lfcs_df = pd.DataFrame(
             lfcs_array, index=self.guides.index, columns=lfcs_df_columns
@@ -250,7 +288,6 @@ class _Screen(AnnData):
         return_result=False,
         keep_per_replicate=False,
     ):
-
         lfcs_df = self.log_fold_change_reps(
             cond1,
             cond2,
@@ -324,7 +361,6 @@ class _Screen(AnnData):
         )
 
     def to_csv(self, out_path="CRISPR_screen"):
-
         """
 
         Write .csv files for each part of the screen. will eventually be replaced by something more native to AnnData.
