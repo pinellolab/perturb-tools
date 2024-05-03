@@ -60,13 +60,13 @@ def read_csvs(
                     raise ValueError("Error raised for layer_df") from e
                 layers_dict[key] = layer_df
     else:
-        if guides_df:
+        if guides_df is not None:
             X_df = X_df.loc[guides_df.index, :]
             if layers_filenames_dict:
                 for key, df_path in layers_filenames_dict.items():
                     layer_df = layer_df.loc[guides_df.index, :]
                     layers_dict[key] = layer_df
-        if samples_df:
+        if samples_df is not None:
             X_df = X_df.loc[:, samples_df.index]
             if layers_filenames_dict:
                 for key, df_path in layers_filenames_dict.items():
