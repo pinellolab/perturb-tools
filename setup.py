@@ -37,7 +37,6 @@ setup(
         "numpy>=1.19.2",
         "pandas>=1.1.2",
         "biopython>=1.79",
-        "pool-sharq>=0.0.12",
         "plotly",
         "regex",
         "xlsxwriter",
