@@ -117,13 +117,13 @@ class _Screen(AnnData):
             ref_seq_path,
         )
 
-    def log_norm(self, output_layer="lognorm_counts", read_count_layer=None):
+    def log_norm(self, output_layer="lognorm_counts", read_count_layer=None, pseudocount = 1):
         if read_count_layer is None:
-            self.layers[output_layer] = _log_normalize_read_count(self.X)
+            self.layers[output_layer] = _log_normalize_read_count(self.X, pseudocount)
         else:
             output_layer = f"lognorm_{read_count_layer}"
             self.layers[output_layer] = _log_normalize_read_count(
-                self.layers[read_count_layer]
+                self.layers[read_count_layer], pseudocount
             )
 
     # TBD: mask ones with too low raw counts.
@@ -133,22 +133,22 @@ class _Screen(AnnData):
         sample2,
         lognorm_counts_key="lognorm_counts",
         name=False,
+        pseudocount: int = 1,
         out_guides_suffix="lfc",
         return_result=False,
     ):
         """
         General module to calculate LFC across experimental conditions.
         """
-        if "lognorm" not in lognorm_counts_key:
-            warnings.warn(
-                "The layer specified must be log-normalized values using screen.log_norm()."
-            )
-
-        if lognorm_counts_key not in self.layers.keys():
-            raise ValueError(
-                "Specified normalized count isn't in your layer. First run screen.log_norm()."
-            )
-
+        if lognorm_counts_key == "lognorm_counts":
+            self.log_norm(pseudocount=pseudocount)
+        else:
+            if "lognorm_" not in lognorm_counts_key:
+                raise ValueError(f"{lognorm_counts_key} is not a lognorm layer- feed in 'lognorm_`layer_key`' as lognorm_counts_key.")
+            read_count_layer_key = lognorm_counts_key.split("lognorm_")[-1]
+            if read_count_layer_key not in self.layers:
+                raise ValueError(f"{read_count_layer_key} not in .layers - feed in 'lognorm_`layer_key`' as lognorm_counts_key.")
+            self.log_norm(output_layer=lognorm_counts_key, read_count_layer=read_count_layer_key, pseudocount=pseudocount)
         sample1_idx = np.where(sample1 == self.samples.index)[0]
         sample2_idx = np.where(sample2 == self.samples.index)[0]
         if len(sample1_idx) != 1 or len(sample2_idx) != 1:
@@ -190,6 +190,7 @@ class _Screen(AnnData):
         rep_col: Union[str, List[str]] = "replicate",
         compare_col="sort",
         out_guides_suffix="lfc",
+        pseudocount=1,
         keep_result=False,
         ignore_missing=False,
     ):
@@ -258,6 +259,7 @@ class _Screen(AnnData):
                     self.samples.index[cond1_idx].tolist()[0],
                     self.samples.index[cond2_idx].tolist()[0],
                     lognorm_counts_key=lognorm_counts_key,
+                    pseudocount=pseudocount,
                     return_result=True,
                 )
             )
@@ -281,9 +283,10 @@ class _Screen(AnnData):
         cond2,
         lognorm_counts_key="lognorm_counts",
         agg_col="replicate",
-        compare_col="sort",
+        compare_col="condition",
         out_guides_suffix="lfc",
         agg_fn="median",
+        pseudocount=1,
         name=None,
         return_result=False,
         keep_per_replicate=False,
@@ -295,6 +298,7 @@ class _Screen(AnnData):
             rep_col=agg_col,
             compare_col=compare_col,
             out_guides_suffix=out_guides_suffix,
+            pseudocount=pseudocount,
             keep_result=keep_per_replicate,
         )
 
