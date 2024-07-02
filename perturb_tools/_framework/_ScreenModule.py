@@ -117,7 +117,9 @@ class _Screen(AnnData):
             ref_seq_path,
         )
 
-    def log_norm(self, output_layer="lognorm_counts", read_count_layer=None, pseudocount = 1):
+    def log_norm(
+        self, output_layer="lognorm_counts", read_count_layer=None, pseudocount=1
+    ):
         if read_count_layer is None:
             self.layers[output_layer] = _log_normalize_read_count(self.X, pseudocount)
         else:
@@ -144,11 +146,19 @@ class _Screen(AnnData):
             self.log_norm(pseudocount=pseudocount)
         else:
             if "lognorm_" not in lognorm_counts_key:
-                raise ValueError(f"{lognorm_counts_key} is not a lognorm layer- feed in 'lognorm_`layer_key`' as lognorm_counts_key.")
+                raise ValueError(
+                    f"{lognorm_counts_key} is not a lognorm layer- feed in 'lognorm_`layer_key`' as lognorm_counts_key."
+                )
             read_count_layer_key = lognorm_counts_key.split("lognorm_")[-1]
             if read_count_layer_key not in self.layers:
-                raise ValueError(f"{read_count_layer_key} not in .layers - feed in 'lognorm_`layer_key`' as lognorm_counts_key.")
-            self.log_norm(output_layer=lognorm_counts_key, read_count_layer=read_count_layer_key, pseudocount=pseudocount)
+                raise ValueError(
+                    f"{read_count_layer_key} not in .layers - feed in 'lognorm_`layer_key`' as lognorm_counts_key."
+                )
+            self.log_norm(
+                output_layer=lognorm_counts_key,
+                read_count_layer=read_count_layer_key,
+                pseudocount=pseudocount,
+            )
         sample1_idx = np.where(sample1 == self.samples.index)[0]
         sample2_idx = np.where(sample2 == self.samples.index)[0]
         if len(sample1_idx) != 1 or len(sample2_idx) != 1:
@@ -198,19 +208,25 @@ class _Screen(AnnData):
         ignore_missing: If True, does not raise Error when one of the conditions is missing for a replicate.
         """
         if isinstance(rep_col, str) and rep_col not in self.samples.columns:
-            raise ValueError(f"{rep_col} not in samples features")
+            raise ValueError(
+                f"In calculating log fold change, rep_col `{rep_col}` not in samples features"
+            )
         elif isinstance(rep_col, list):
             for rc in rep_col:
                 if rc not in self.samples.columns:
-                    raise ValueError(f"{rc} not in samples features")
+                    raise ValueError(
+                        f"In calculating log fold change, rep_col `{rc}` not in samples features"
+                    )
         if compare_col not in self.samples.columns:
-            raise ValueError(f"{compare_col} not in samples features")
+            raise ValueError(
+                f"In calculating log fold change, compare_col `{compare_col}` not in samples features"
+            )
         if (
             cond1 not in self.samples[compare_col].tolist()
             or cond2 not in self.samples[compare_col].tolist()
         ):
             raise ValueError(
-                f"{cond1} or {cond2} not in sample conditions {self.samples[compare_col]}"
+                f"In calculating log fold change, cond1 `{cond1}` or cond2 `{cond2}` not in sample conditions {self.samples[compare_col]}"
             )
 
         lfcs = []
